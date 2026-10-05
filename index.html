@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Smart Escape</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#map-panel" data-i18n="skipToMap">Skip to map</a>
+
+  <div class="app">
+    <!-- ============ SIDEBAR ============ -->
+    <aside class="sidebar" aria-label="Controls">
+      <header class="brand">
+        <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+          <rect x="2" y="2" width="28" height="28" rx="7" fill="currentColor"/>
+          <path d="M9 22h6v-7h8" fill="none" stroke="var(--on-accent)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M20 11l4 4-4 4" fill="none" stroke="var(--on-accent)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <div>
+          <h1 class="brand-name" data-i18n="appName">Smart Escape</h1>
+          <p class="brand-sub" data-i18n="tagline">Evacuation route simulator</p>
+        </div>
+        <button id="theme-toggle" class="icon-btn" type="button" aria-label="Toggle theme" data-i18n-aria="toggleTheme">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path class="i-sun" d="M12 4V2m0 20v-2M4 12H2m20 0h-2M6.3 6.3 4.9 4.9m14.2 14.2-1.4-1.4M6.3 17.7l-1.4 1.4M19.1 4.9l-1.4 1.4M12 8a4 4 0 100 8 4 4 0 000-8z"/><path class="i-moon" d="M20 14.5A8 8 0 019.5 4 8 8 0 1020 14.5z"/></svg>
+        </button>
+      </header>
+
+      <!-- Language -->
+      <section class="group" aria-labelledby="lang-h">
+        <h2 id="lang-h" class="group-title" data-i18n="language">Language</h2>
+        <div class="segmented" role="group" aria-label="Language">
+          <button type="button" class="seg is-active" data-lang="en" aria-pressed="true">English</button>
+          <button type="button" class="seg" data-lang="bn" aria-pressed="false" lang="bn">বাংলা</button>
+        </div>
+      </section>
+
+      <!-- Scenario loader -->
+      <section class="group" aria-labelledby="load-h">
+        <h2 id="load-h" class="group-title" data-i18n="scenario">Scenario</h2>
+        <label class="dropzone" for="json-input" id="dropzone">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3"/></svg>
+          <span class="dz-main" data-i18n="loadJson">Load map JSON</span>
+          <span class="dz-sub" id="file-name" data-i18n="dropHint">Choose a file or drop it here</span>
+        </label>
+        <input id="json-input" class="visually-hidden" type="file" accept=".json,application/json">
+        <p id="load-error" class="field-error" role="alert" hidden></p>
+        <div class="btn-row">
+          <button id="btn-sample" class="btn" type="button" data-i18n="loadSample">Load sample</button>
+          <button id="btn-reset" class="btn btn-danger" type="button" data-i18n="reset">Reset</button>
+        </div>
+      </section>
+
+      <!-- Simulation controls -->
+      <section class="group" aria-labelledby="sim-h">
+        <h2 id="sim-h" class="group-title" data-i18n="simulation">Simulation</h2>
+        <div class="btn-row">
+          <button id="btn-start" class="btn btn-primary" type="button" disabled data-i18n="start">Start evacuation</button>
+          <button id="btn-pause" class="btn" type="button" disabled data-i18n="pause">Pause</button>
+        </div>
+        <label class="slider">
+          <span data-i18n="speed">Speed</span>
+          <input id="speed" type="range" min="0.5" max="3" step="0.5" value="1">
+          <output id="speed-out" for="speed">1×</output>
+        </label>
+      </section>
+
+      <!-- Status panel -->
+      <section class="group status" aria-labelledby="status-h" aria-live="polite">
+        <h2 id="status-h" class="group-title" data-i18n="status">Status</h2>
+        <div class="state-chip" id="state-chip" data-state="idle">
+          <span class="dot"></span>
+          <span id="state-text" data-i18n="stateIdle">No scenario loaded</span>
+        </div>
+        <dl class="stats">
+          <div><dt data-i18n="occupants">Occupants</dt><dd id="stat-total">0</dd></div>
+          <div><dt data-i18n="evacuated">Evacuated</dt><dd id="stat-out">0</dd></div>
+          <div><dt data-i18n="exits">Open exits</dt><dd id="stat-exits">0</dd></div>
+          <div><dt data-i18n="blocked">Blocked paths</dt><dd id="stat-blocked">0</dd></div>
+          <div class="wide"><dt data-i18n="eta">Estimated time</dt><dd id="stat-eta">–</dd></div>
+        </dl>
+        <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="progress">
+          <span id="progress-bar"></span>
+        </div>
+        <ul id="log" class="log" aria-label="Event log"></ul>
+      </section>
+    </aside>
+
+    <!-- ============ MAIN ============ -->
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <h2 class="map-title" id="map-title" data-i18n="mapTitle">Floor plan</h2>
+          <p class="map-sub" id="map-sub" data-i18n="mapHint">Click a corridor to block or reopen it.</p>
+        </div>
+        <ul class="legend" aria-label="Legend">
+          <li><i class="sw sw-exit"></i><span data-i18n="lgExit">Exit</span></li>
+          <li><i class="sw sw-person"></i><span data-i18n="lgPerson">Person</span></li>
+          <li><i class="sw sw-route"></i><span data-i18n="lgRoute">Route</span></li>
+          <li><i class="sw sw-hazard"></i><span data-i18n="lgHazard">Blocked / hazard</span></li>
+        </ul>
+      </header>
+
+      <section id="map-panel" class="map-panel" aria-label="Map" tabindex="-1">
+        <svg id="map" viewBox="0 0 1000 640" preserveAspectRatio="xMidYMid meet" role="img" aria-labelledby="map-title">
+          <defs>
+            <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+              <path d="M40 0H0V40" class="grid-line"/>
+            </pattern>
+            <marker id="arrow" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M0 0L10 5L0 10z" class="arrow-head"/>
+            </marker>
+          </defs>
+          <rect id="layer-bg" width="1000" height="640" fill="url(#grid)"/>
+          <g id="layer-floor"></g>
+          <g id="layer-walls"></g>
+          <g id="layer-hazards"></g>
+          <g id="layer-routes"></g>
+          <g id="layer-exits"></g>
+          <g id="layer-agents"></g>
+          <g id="layer-labels"></g>
+        </svg>
+
+        <div id="empty-state" class="empty-state">
+          <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M6 40V8h36v32M6 24h14M28 24h14M20 40V24M28 8v16"/></svg>
+          <h3 data-i18n="emptyTitle">No map yet</h3>
+          <p data-i18n="emptyBody">Load a JSON scenario or try the sample to see evacuation routes.</p>
+        </div>
+
+        <div class="map-tools" role="group" aria-label="Map view">
+          <button id="zoom-in" class="icon-btn" type="button" aria-label="Zoom in">+</button>
+          <button id="zoom-out" class="icon-btn" type="button" aria-label="Zoom out">−</button>
+          <button id="zoom-fit" class="icon-btn" type="button" aria-label="Fit to screen">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+          </button>
+        </div>
+        <div id="tooltip" class="tooltip" role="tooltip" hidden></div>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js" defer></script>
+</body>
+</html>
